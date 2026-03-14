@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asusu Savings Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a5f2a 0%, #0d3d1a 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .login-box h1 {
+            color: #1a5f2a;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .login-box p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .password-input {
+            width: 200px;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #1a5f2a;
+            border-radius: 8px;
+            text-align: center;
+            letter-spacing: 5px;
+            margin-bottom: 15px;
+        }
+
+        .login-btn {
+            background: #1a5f2a;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: #0d3d1a;
+            transform: translateY(-2px);
+        }
+
+        .error-msg {
+            color: #d32f2f;
+            margin-top: 10px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        /* Main App */
+        .main-app {
+            display: none;
+        }
+
+        .main-app.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header .date {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .savings-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .savings-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .savings-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+        }
+
+        .savings-card.laila::before { background: linear-gradient(90deg, #e91e63, #f48fb1); }
+        .savings-card.bubu::before { background: linear-gradient(90deg, #2196f3, #64b5f6); }
+        .savings-card.ummi::before { background: linear-gradient(90deg, #9c27b0, #ce93d8); }
+        .savings-card.me::before { background: linear-gradient(90deg, #ff9800, #ffb74d); }
+        .savings-card.emergency::before { background: linear-gradient(90deg, #f44336, #ef5350); }
+
+        .card-name {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .card-amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1a5f2a;
+            margin-bottom: 5px;
+        }
+
+        .card-note {
+            font-size: 0.85em;
+            color: #888;
+            font-style: italic;
+        }
+
+        /* Transaction Section */
+        .transaction-section, .narration-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #1a5f2a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .transaction-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1a5f2a;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .add-btn {
+            background: #1a5f2a;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            height: fit-content;
+        }
+
+        .add-btn:hover {
+            background: #0d3d1a;
+            transform: scale(1.05);
+        }
+
+        .add-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* History Table */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .history-table th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .history-table td {
+            padding: 15px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge.credit {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge.debit {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .amount-positive {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .amount-negative {
+            color: #c62828;
+            font-weight: 600;
+        }
+
+        .delete-btn {
+            background: #ffebee;
+            color: #c62828;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #c62828;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Narration Section Specific Styles */
+        .narration-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .narration-form .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .narration-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .narration-item {
+            background: white;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .narration-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .narration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .narration-date {
+            font-size: 0.85em;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .narration-account {
+            background: #ffebee;
+            color: #c62828;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .narration-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #c62828;
+            margin-bottom: 8px;
+        }
+
+        .narration-text {
+            color: #333;
+            line-height: 1.6;
+            font-size: 0.95em;
+            white-space: pre-wrap;
+        }
+
+        .narration-delete {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            line-height: 1;
+        }
+
+        .narration-delete:hover {
+            color: #c62828;
+        }
+
+        .total-summary {
+            background: linear-gradient(135deg, #1a5f2a 0%, #2e7d32 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .total-summary h3 {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .total-amount {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .reset-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (max-width: 768px) {
+            .transaction-form,
+            .narration-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .narration-form .form-group.full-width {
+                grid-column: 1;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h1>🔒 Asusu Savings</h1>
+            <p>Enter your 4-digit password to access</p>
+            <input type="password" class="password-input" id="passwordInput" maxlength="4" placeholder="••••">
+            <br>
+            <button class="login-btn" onclick="checkPassword()">Unlock</button>
+            <p class="error-msg" id="errorMsg">Incorrect password. Try again.</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="main-app" id="mainApp">
+        <button class="logout-btn" onclick="logout()">🔒 Lock</button>
+        
+        <header>
+            <h1>💰 Asusu Savings Tracker</h1>
+            <p class="date" id="currentDate">CASH DD/MM/YYYY</p>
+        </header>
+
+        <div class="container">
+            <!-- Savings Cards -->
+            <div class="cards-grid" id="cardsGrid">
+                <!-- Cards will be generated by JavaScript -->
+            </div>
+
+            <!-- Add Transaction -->
+            <div class="transaction-section">
+                <h2 class="section-title">📝 New Transaction</h2>
+                <div class="transaction-form">
+                    <div class="form-group">
+                        <label>Account</label>
+                        <select id="accountSelect">
+                            <option value="laila">Laila</option>
+                            <option value="bubu">Bubu</option>
+                            <option value="ummi">Ummi</option>
+                            <option value="me">Me</option>
+                            <option value="emergency">Home Emergency</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="typeSelect" onchange="toggleNarrationLink()">
+                            <option value="credit">Added Money (Credit)</option>
+                            <option value="debit">Removed Money (Debit)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (₦)</label>
+                        <input type="number" id="amountInput" placeholder="e.g. 5000" min="1">
+                    </div>
+                    <button class="add-btn" onclick="addTransaction()">Add</button>
+                </div>
+
+                <!-- History -->
+                <h2 class="section-title">📋 Transaction History</h2>
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Account</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- History rows will be generated by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    No transactions yet. Add your first transaction above.
+                </div>
+            </div>
+
+            <!-- Withdrawal Narration Section -->
+            <div class="narration-section">
+                <h2 class="section-title">📝 Withdrawal Narration (Record of Evidence)</h2>
+                <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">
+                    Document why money was removed from savings. This creates an audit trail for accountability.
+                </p>
+                
+                <div class="narration-form">
+                    <div class="form-group">
+                        <label>Account Withdrawn From</label>
+                        <select id="narrationAccount">
+                            <option value="laila">Laila</option>
+                            <option value="bubu">Bubu</option>
+                            <option value="ummi">Ummi</option>
+                            <option value="me">Me</option>
+                            <option value="emergency">Home Emergency</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount Withdrawn (₦)</label>
+                        <input type="number" id="narrationAmount" placeholder="e.g. 5000" min="1">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Purpose / Reason for Withdrawal</label>
+                        <textarea id="narrationText" placeholder="Explain why this money was removed. Be specific: e.g., 'Paid for Laila's school fees', 'Emergency medical bill for Ummi', 'Bubu needed transport money', etc."></textarea>
+                    </div>
+                    <button class="add-btn" onclick="addNarration()" style="grid-column: 1 / -1; justify-self: start;">Record Withdrawal Narration</button>
+                </div>
+
+                <h3 style="color: #1a5f2a; margin-bottom: 15px; font-size: 1.1em;">📚 Withdrawal Records</h3>
+                <div class="narration-list" id="narrationList">
+                    <!-- Narration items will be generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Total Summary -->
+            <div class="total-summary">
+                <h3>Total Savings Across All Accounts</h3>
+                <div class="total-amount" id="totalAmount">₦0</div>
+                <div class="data-actions">
+                    <button class="reset-btn" onclick="resetAllData()">🗑️ Reset All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Initial Data
+        const defaultAccounts = {
+            laila: { name: 'Laila', amount: 154000, note: 'Bubu owes ₦21k for forex', class: 'laila' },
+            bubu: { name: 'Bubu', amount: 200, note: '', class: 'bubu' },
+            ummi: { name: 'Ummi', amount: 160000, note: 'After transfers: ₦30k yest. + ₦60k today', class: 'ummi' },
+            me: { name: 'Me', amount: 30000, note: '', class: 'me' },
+            emergency: { name: 'Home Emergency', amount: 60000, note: '', class: 'emergency' }
+        };
+
+        let accounts = {};
+        let transactions = [];
+        let narrations = []; // New array for withdrawal narrations
+        const CORRECT_PASSWORD = '7654';
+
+        // Local Storage Functions
+        function saveData() {
+            localStorage.setItem('asusuAccounts', JSON.stringify(accounts));
+            localStorage.setItem('asusuTransactions', JSON.stringify(transactions));
+            localStorage.setItem('asusuNarrations', JSON.stringify(narrations));
+        }
+
+        function loadData() {
+            const savedAccounts = localStorage.getItem('asusuAccounts');
+            const savedTransactions = localStorage.getItem('asusuTransactions');
+            const savedNarrations = localStorage.getItem('asusuNarrations');
+            
+            if (savedAccounts) {
+                accounts = JSON.parse(savedAccounts);
+            } else {
+                accounts = JSON.parse(JSON.stringify(defaultAccounts));
+            }
+            
+            if (savedTransactions) {
+                transactions = JSON.parse(savedTransactions);
+            } else {
+                transactions = [];
+            }
+
+            if (savedNarrations) {
+                narrations = JSON.parse(savedNarrations);
+            } else {
+                narrations = [];
+            }
+        }
+
+        function resetAllData() {
+            if (!confirm('⚠️ WARNING: This will delete ALL your savings data, transactions, and withdrawal narrations. Are you sure?')) return;
+            if (!confirm('Double check: Everything will be lost forever. Continue?')) return;
+            
+            localStorage.removeItem('asusuAccounts');
+            localStorage.removeItem('asusuTransactions');
+            localStorage.removeItem('asusuNarrations');
+            
+            accounts = JSON.parse(JSON.stringify(defaultAccounts));
+            transactions = [];
+            narrations = [];
+            
+            renderCards();
+            renderHistory();
+            renderNarrations();
+            updateTotal();
+            
+            alert('✅ All data has been reset to starting values.');
+        }
+
+        // Format currency
+        function formatMoney(amount) {
+            return '₦' + amount.toLocaleString();
+        }
+
+        // Get current date in DD/MM/YYYY format
+        function getCurrentDate() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            return `CASH ${day}/${month}/${year}`;
+        }
+
+        // Display current date
+        function displayCurrentDate() {
+            document.getElementById('currentDate').textContent = getCurrentDate();
+        }
+
+        // Check password
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            if (input === CORRECT_PASSWORD) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.add('visible');
+                
+                loadData();
+                displayCurrentDate();
+                renderCards();
+                renderHistory();
+                renderNarrations();
+                updateTotal();
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+
+        // Logout
+        function logout() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.remove('visible');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        // Enter key on password
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        // Render savings cards
+        function renderCards() {
+            const grid = document.getElementById('cardsGrid');
+            grid.innerHTML = '';
+            
+            for (let key in accounts) {
+                const acc = accounts[key];
+                const card = document.createElement('div');
+                card.className = `savings-card ${acc.class}`;
+                card.innerHTML = `
+                    <div class="card-name">${acc.name}</div>
+                    <div class="card-amount">${formatMoney(acc.amount)}</div>
+                    ${acc.note ? `<div class="card-note">${acc.note}</div>` : ''}
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        // Add transaction
+        function addTransaction() {
+            const accountKey = document.getElementById('accountSelect').value;
+            const type = document.getElementById('typeSelect').value;
+            const amount = parseFloat(document.getElementById('amountInput').value);
+
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            const account = accounts[accountKey];
+            const timestamp = new Date().toLocaleString('en-NG', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Update account balance
+            if (type === 'credit') {
+                account.amount += amount;
+            } else {
+                if (account.amount < amount) {
+                    alert('Insufficient funds in this account!');
+                    return;
+                }
+                account.amount -= amount;
+            }
+
+            // Add to history
+            const transaction = {
+                id: Date.now(),
+                timestamp,
+                account: account.name,
+                accountKey,
+                type,
+                amount,
+                description: type === 'credit' ? `Added to ${account.name}` : `Debited from ${account.name}`
+            };
+            transactions.unshift(transaction);
+
+            saveData();
+
+            document.getElementById('amountInput').value = '';
+            renderCards();
+            renderHistory();
+            updateTotal();
+        }
+
+        // Render history table
+        function renderHistory() {
+            const tbody = document.getElementById('historyBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (transactions.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            tbody.innerHTML = transactions.map(t => `
+                <tr>
+                    <td>${t.timestamp}</td>
+                    <td><strong>${t.account}</strong></td>
+                    <td>
+                        <span class="badge ${t.type}">${t.type === 'credit' ? 'CREDIT' : 'DEBIT'}</span>
+                        <br><small style="color: #666;">${t.description}</small>
+                    </td>
+                    <td class="${t.type === 'credit' ? 'amount-positive' : 'amount-negative'}">
+                        ${t.type === 'credit' ? '+' : '-'}${formatMoney(t.amount)}
+                    </td>
+                    <td>
+                        <button class="delete-btn" onclick="deleteTransaction(${t.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Delete transaction
+        function deleteTransaction(id) {
+            if (!confirm('Delete this transaction?')) return;
+            
+            const index = transactions.findIndex(t => t.id === id);
+            if (index === -1) return;
+            
+            const t = transactions[index];
+            const account = accounts[t.accountKey];
+            
+            if (t.type === 'credit') {
+                account.amount -= t.amount;
+            } else {
+                account.amount += t.amount;
+            }
+            
+            transactions.splice(index, 1);
+            
+            saveData();
+            
+            renderCards();
+            renderHistory();
+            updateTotal();
+        }
+
+        // Add narration
+        function addNarration() {
+            const accountKey = document.getElementById('narrationAccount').value;
+            const amount = parseFloat(document.getElementById('narrationAmount').value);
+            const text = document.getElementById('narrationText').value.trim();
+
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            if (!text) {
+                alert('Please explain the reason for withdrawal');
+                return;
+            }
+
+            const account = accounts[accountKey];
+            const timestamp = new Date().toLocaleString('en-NG', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const narration = {
+                id: Date.now(),
+                timestamp,
+                account: account.name,
+                accountKey,
+                amount,
+                text
+            };
+
+            narrations.unshift(narration);
+            saveData();
+
+            // Clear form
+            document.getElementById('narrationAmount').value = '';
+            document.getElementById('narrationText').value = '';
+            
+            renderNarrations();
+        }
+
+        // Render narrations
+        function renderNarrations() {
+            const list = document.getElementById('narrationList');
+            
+            if (narrations.length === 0) {
+                list.innerHTML = '<div class="empty-state">No withdrawal records yet. When you remove money, document the reason here for accountability.</div>';
+                return;
+            }
+
+            list.innerHTML = narrations.map(n => `
+                <div class="narration-item">
+                    <button class="narration-delete" onclick="deleteNarration(${n.id})" title="Delete record">×</button>
+                    <div class="narration-header">
+                        <span class="narration-date">🕐 ${n.timestamp}</span>
+                        <span class="narration-account">${n.account}</span>
+                    </div>
+                    <div class="narration-amount">-${formatMoney(n.amount)}</div>
+                    <div class="narration-text">${escapeHtml(n.text)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Delete narration
+        function deleteNarration(id) {
+            if (!confirm('Delete this withdrawal record?')) return;
+            
+            const index = narrations.findIndex(n => n.id === id);
+            if (index === -1) return;
+            
+            narrations.splice(index, 1);
+            saveData();
+            renderNarrations();
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Update total summary
+        function updateTotal() {
+            const total = Object.values(accounts).reduce((sum, acc) => sum + acc.amount, 0);
+            document.getElementById('totalAmount').textContent = formatMoney(total);
+        }
+
+        // Enter key handlers
+        document.getElementById('amountInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addTransaction();
+        });
+
+        document.getElementById('narrationText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                addNarration();
+            }
+        });
+    </script>
+</body>
+</html>
